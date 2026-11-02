@@ -1,3 +1,14 @@
 spring:
   application:
     name: rate-limiter-service
+  datasource:
+    url: jdbc:postgresql://localhost:5433/ratelimiter
+    username: rl
+    password: rl
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  data:
+    redis:
+      host: localhost
+      port: 6379
