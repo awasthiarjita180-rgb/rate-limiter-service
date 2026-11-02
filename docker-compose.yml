@@ -1,0 +1,11 @@
+services:
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ratelimiter
+      POSTGRES_USER: rl
+      POSTGRES_PASSWORD: rl
+    ports: ["5433:5432"]
