@@ -1,0 +1,1 @@
+INSERT INTO rate_limit_rules VALUES ('premium-key', 100, 10);
