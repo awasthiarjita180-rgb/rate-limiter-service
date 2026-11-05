@@ -18,10 +18,12 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     private final TokenBucketRateLimiter limiter;
     private final RuleService rules;
+    private final BlockedRequestLogger blockedLogger;
 
-    public RateLimitFilter(TokenBucketRateLimiter limiter, RuleService rules) {
+    public RateLimitFilter(TokenBucketRateLimiter limiter, RuleService rules, BlockedRequestLogger blockedLogger) {
         this.limiter = limiter;
         this.rules = rules;
+        this.blockedLogger = blockedLogger;
     }
 
     @Override
@@ -57,6 +59,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         res.setHeader("X-RateLimit-Remaining", String.valueOf(result.remaining()));
 
         if (!result.allowed()) {
+            blockedLogger.log(clientId, req.getRequestURI());
             res.setHeader("Retry-After", String.valueOf((result.retryAfterMs() + 999) / 1000));
             res.setStatus(429);
             res.setContentType("application/json");
