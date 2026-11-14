@@ -1,7 +1,26 @@
+x-app: &app
+  build: .
+  environment:
+    SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ratelimiter
+    SPRING_DATASOURCE_USERNAME: rl
+    SPRING_DATASOURCE_PASSWORD: rl
+    SPRING_DATA_REDIS_HOST: redis
+  depends_on:
+    redis:
+      condition: service_healthy
+    postgres:
+      condition: service_healthy
+
 services:
   redis:
     image: redis:7-alpine
     ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   postgres:
     image: postgres:16-alpine
     environment:
@@ -9,3 +28,23 @@ services:
       POSTGRES_USER: rl
       POSTGRES_PASSWORD: rl
     ports: ["5433:5432"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rl -d ratelimiter"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  app1:
+    <<: *app
+
+  app2:
+    <<: *app
+
+  nginx:
+    image: nginx:alpine
+    ports: ["8080:80"]
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - app1
+      - app2
