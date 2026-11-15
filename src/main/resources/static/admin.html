@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Rate Limiter Admin</title>
+    <style>
+        body { font-family: system-ui, sans-serif; margin: 2rem auto; max-width: 800px; padding: 0 1rem; color: #1a1a1a; }
+        h1 { margin-bottom: .25rem; }
+        .sub { color: #666; margin-top: 0; }
+        .card { border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin: 1rem 0; }
+        button { padding: .5rem 1rem; border: 0; border-radius: 6px; background: #2563eb; color: #fff; cursor: pointer; }
+        select { padding: .45rem; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { text-align: left; padding: .5rem; border-bottom: 1px solid #eee; }
+        .stat { font-size: 1.5rem; font-weight: 600; }
+    </style>
+</head>
+<body>
+<h1>Rate Limiter Admin</h1>
+<p class="sub">Blocked requests, refreshed every 3 seconds</p>
+
+<div class="card">
+    <strong>Send a test burst</strong><br><br>
+    <select id="key" aria-label="API key">
+        <option value="demo-key">demo-key (10 tokens, 1/sec)</option>
+        <option value="premium-key">premium-key (100 tokens, 10/sec)</option>
+    </select>
+    <button id="burst">Send 30 requests</button>
+    <p id="result"></p>
+</div>
+
+<div class="card">
+    <div>Latest blocked requests (up to 20): <span class="stat" id="count">0</span></div>
+    <table>
+        <thead><tr><th>Time</th><th>Client</th><th>Path</th></tr></thead>
+        <tbody id="rows"></tbody>
+    </table>
+</div>
+
+<script>
+    async function load() {
+      try {
+        const res = await fetch('/admin/blocked?limit=20');
+        const data = await res.json();
+        document.getElementById('count').textContent = data.length;
+        const tbody = document.getElementById('rows');
+        tbody.replaceChildren();
+        for (const r of data) {
+          const tr = document.createElement('tr');
+          for (const text of [new Date(r.blocked_at).toLocaleTimeString(), r.client_id, r.path]) {
+            const td = document.createElement('td');
+            td.textContent = text;
+            tr.appendChild(td);
+          }
+          tbody.appendChild(tr);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    document.getElementById('burst').addEventListener('click', async () => {
+      const key = document.getElementById('key').value;
+      let ok = 0, blocked = 0;
+      for (let i = 0; i < 30; i++) {
+        const res = await fetch('/api/hello', { headers: { 'X-API-Key': key } });
+        if (res.status === 200) ok++;
+        else if (res.status === 429) blocked++;
+      }
+      document.getElementById('result').textContent = 'Allowed: ' + ok + ', blocked: ' + blocked;
+      load();
+    });
+
+    load();
+    setInterval(load, 3000);
+</script>
+</body>
+</html>
